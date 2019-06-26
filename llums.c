@@ -14,7 +14,6 @@ void inisintable(){
 	}
 }
 void inicostable(){
-
 	costable = (double*)malloc(PRECISION*sizeof(double));
 	for (int i=0; i<PRECISION; ++i){
 		costable[i] = cos((double)i*2.0*PI/(double)PRECISION);
@@ -31,8 +30,14 @@ double getCos(double value){
 	return costable[(int)(((double)PRECISION*(double)value))];
 }
 
-#define N 1024
+#define N 1024*10
 #define maxint (1<<31)
+
+#define fftcalc(_k,_i) \
+	tmp2 = ((2*PI*_k*(_i))/(double)N); \
+	tmp += getCos(tmp2)*adapt[_i]; \
+	tmpi += getSin(tmp2)*adapt[_i];
+
 void fft(int* in, int* out){
 
 	double fft_mag[N];
@@ -41,14 +46,16 @@ void fft(int* in, int* out){
 		double tmp = ((double)(in[i])/maxint)*(0.5-0.5*getCos((2.0*PI*i)/(N-1)));
 		adapt[i] = tmp;
 	}
+	double tmp2;
 	//int red = N/2; //values duplicate at the extremes
 	for(int k=0; k<N; ++k){
 		double tmp = 0.0;
 		double tmpi = 0.0;
-		for(int i=0; i<N; ++i){
-			double tmp2 = ((2*PI*k*(i))/(double)N);
-			tmp += getCos(tmp2)*adapt[i];
-			tmpi += getSin(tmp2)*adapt[i];
+		for(int i=0; i<N-4; i+=4){
+			fftcalc(k,i)
+			fftcalc(k,i+1)
+			fftcalc(k,i+2)
+			fftcalc(k,i+3)
 		}
 		double d = tmp*tmp + tmpi*tmpi;
 		if(d<0)d=0;
